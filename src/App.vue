@@ -2,26 +2,28 @@
   <div class="camera-canvas">
     <video ref="liveView" class="live-view" autoplay v-show="false"></video>
     <div class="container" ref="ascii"></div>
-    <div class="control">
-      <button v-on:click="bwOn">on</button>
-      <div>bw</div>
-      <button v-on:click="bwOff">off</button>
-    </div>
-    <div class="control">
-      <button v-on:click="incBrightness">+</button>
-      <div>brightness : {{ brightness.toString().slice(0, 3) }}</div>
-      <button v-on:click="decBrightness">-</button>
-    </div>
-    <div class="control">
-      <button v-on:click="incContrast">+</button>
-      <div>contrast : {{ contrast.toString().slice(0, 3) }}</div>
-      <button v-on:click="decContrast">-</button>
-    </div>
-    <div class="control">
-      <button v-on:click="incAscii">+</button>
-      <div>ascii size : {{ asciiSize.toString().slice(0, 3) }}</div>
-      <button v-on:click="decAscii">-</button>
-      <button v-on:click="toggleAscii">toggle</button>
+    <div class="control-menu" ref="controlMenu">
+      <div class="control">
+        <button v-on:click="bwOn">on</button>
+        <div>bw</div>
+        <button v-on:click="bwOff">off</button>
+      </div>
+      <div class="control">
+        <button v-on:click="incBrightness">+</button>
+        <div>brightness : {{ brightness.toString().slice(0, 3) }}</div>
+        <button v-on:click="decBrightness">-</button>
+      </div>
+      <div class="control">
+        <button v-on:click="incContrast">+</button>
+        <div>contrast : {{ contrast.toString().slice(0, 3) }}</div>
+        <button v-on:click="decContrast">-</button>
+      </div>
+      <div class="control">
+        <button v-on:click="incAscii">+</button>
+        <div>ascii size : {{ asciiSize.toString().slice(0, 3) }}</div>
+        <button v-on:click="decAscii">-</button>
+        <button v-on:click="toggleAscii">toggle</button>
+      </div>
     </div>
   </div>
 </template>
@@ -37,9 +39,6 @@ import * as PIXI from "pixi.js";
 import {ColorMatrixFilter} from "@pixi/filter-color-matrix";
 import {AsciiFilter} from "@pixi/filter-ascii";
 
-const width = 1920;
-const height = 1080;
-
 @Options({
   props: {
     msg: String,
@@ -51,17 +50,17 @@ export default class Camera extends Vue {
     camera: HTMLVideoElement;
     ascii: HTMLDivElement;
     liveView: HTMLVideoElement;
+    controlMenu: HTMLDivElement;
   };
   isCameraOpen = false;
   scaleFactor = 1.0;
   stream: MediaStream | null = null;
 
-  pixiApp = new PIXI.Application({
-    width: width,
-    height: height,
-    backgroundColor: 0x282828,
-    resolution: window.devicePixelRatio || 1,
-  });
+  width: number | null = null;
+  height: number | null = null;
+  ratio = 16 / 9;
+
+  pixiApp: PIXI.Application | null = null;
 
   bw = true;
   contrast = 1.0;
@@ -75,8 +74,17 @@ export default class Camera extends Vue {
   asciiFilter = new AsciiFilter(6);
 
   mounted() {
+    this.width = window.innerWidth;
+    this.height = window.innerHeight - this.$refs.controlMenu.clientHeight;
+    this.pixiApp = new PIXI.Application({
+      width: this.width,
+      height: this.height,
+      backgroundColor: 0x282828,
+      resolution: window.devicePixelRatio || 1,
+    });
+
     const constraints = {
-      video: {width: width, height: height, facingMode: "user"},
+      video: {width: this.width, height: this.height, facingMode: "user"},
       audio: false,
     };
     navigator.mediaDevices
@@ -106,6 +114,23 @@ export default class Camera extends Vue {
       this.colorMatrixBW,
     ];
     this.pixiApp.stage.addChild(this.container);
+    window.onresize = this.resize;
+  }
+
+  resize() {
+    // let w;
+    // let h;
+    // if (window.innerWidth / window.innerHeight >= this.ratio) {
+    //   w = window.innerHeight * this.ratio;
+    //   h = window.innerHeight;
+    // } else {
+    //   w = window.innerWidth;
+    //   h = window.innerWidth / this.ratio;
+    // }
+    if (!this.pixiApp) throw new Error();
+    this.pixiApp.renderer.view.style.width = window.innerWidth + "px";
+    this.pixiApp.renderer.view.style.height =
+      window.innerHeight - this.$refs.controlMenu.clientHeight + "px";
   }
 
   bwOn() {
@@ -164,6 +189,7 @@ export default class Camera extends Vue {
 <style>
 body {
   margin: 0;
+  overflow: hidden; /* Hide scrollbars */
 }
 .camera-canvas {
   background: black;

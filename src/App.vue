@@ -29,15 +29,10 @@
 </template>
 
 <script lang="ts">
-declare global {
-  interface Window {
-    constraints: any;
-  }
-}
-import {Options, Vue} from "vue-class-component";
+import { Options, Vue } from "vue-class-component";
 import * as PIXI from "pixi.js";
-import {ColorMatrixFilter} from "@pixi/filter-color-matrix";
-import {AsciiFilter} from "@pixi/filter-ascii";
+import { ColorMatrixFilter } from "@pixi/filter-color-matrix";
+import { AsciiFilter } from "@pixi/filter-ascii";
 
 @Options({
   props: {
@@ -74,7 +69,7 @@ export default class Camera extends Vue {
   colorMatrixBW: ColorMatrixFilter = new PIXI.filters.ColorMatrixFilter();
   asciiFilter = new AsciiFilter(6);
 
-  mounted() {
+  mounted(): void {
     const width = window.innerWidth;
     const height = window.innerHeight - this.$refs.controlMenu.clientHeight;
     this.pixiApp = new PIXI.Application({
@@ -85,7 +80,7 @@ export default class Camera extends Vue {
     });
 
     const constraints = {
-      video: {width: width, height: height, facingMode: "user"},
+      video: { width: width, height: height, facingMode: "user" },
       audio: false,
     };
     console.log(constraints);
@@ -118,7 +113,7 @@ export default class Camera extends Vue {
     window.onresize = this.resize;
   }
 
-  resize() {
+  resize(): void {
     // let w;
     // let h;
     // if (window.innerWidth / window.innerHeight >= this.ratio) {
@@ -144,8 +139,9 @@ export default class Camera extends Vue {
       this.pixiApp.screen.height / 2 - this.webcamSprite.height / 2;
   }
 
-  bwOn() {
-    this.container!.filters = [
+  bwOn(): void {
+    if (!this.container) throw new Error();
+    this.container.filters = [
       this.colorMatrixBrightness,
       this.colorMatrixContrast,
       this.asciiFilter,
@@ -153,45 +149,46 @@ export default class Camera extends Vue {
     ];
   }
 
-  bwOff() {
-    this.container!.filters = [
+  bwOff(): void {
+    if (!this.container) throw new Error();
+    this.container.filters = [
       this.colorMatrixBrightness,
       this.colorMatrixContrast,
       this.asciiFilter,
     ];
   }
 
-  incBrightness() {
+  incBrightness(): void {
     this.brightness += 0.1;
     this.colorMatrixBrightness.brightness(this.brightness, false);
   }
 
-  decBrightness() {
+  decBrightness(): void {
     this.brightness -= 0.1;
     this.colorMatrixBrightness.brightness(this.brightness, false);
   }
 
-  incContrast() {
+  incContrast(): void {
     this.contrast += 0.1;
     this.colorMatrixContrast.contrast(this.contrast, false);
   }
 
-  decContrast() {
+  decContrast(): void {
     this.contrast -= 0.1;
     this.colorMatrixContrast.contrast(this.contrast, false);
   }
 
-  incAscii() {
+  incAscii(): void {
     this.asciiSize += 1;
     this.asciiFilter.size = this.asciiSize;
   }
 
-  decAscii() {
+  decAscii(): void {
     this.asciiSize -= 1;
     this.asciiFilter.size = this.asciiSize;
   }
 
-  toggleAscii() {
+  toggleAscii(): void {
     this.asciiFilter.enabled = !this.asciiFilter.enabled;
   }
 }

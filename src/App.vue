@@ -61,6 +61,7 @@ export default class Camera extends Vue {
   ratio = 16 / 9;
 
   pixiApp: PIXI.Application | null = null;
+  webcamSprite: PIXI.Sprite | null = null;
 
   bw = true;
   contrast = 1.0;
@@ -74,19 +75,20 @@ export default class Camera extends Vue {
   asciiFilter = new AsciiFilter(6);
 
   mounted() {
-    this.width = window.innerWidth;
-    this.height = window.innerHeight - this.$refs.controlMenu.clientHeight;
+    const width = window.innerWidth;
+    const height = window.innerHeight - this.$refs.controlMenu.clientHeight;
     this.pixiApp = new PIXI.Application({
-      width: this.width,
-      height: this.height,
+      width: width,
+      height: height,
       backgroundColor: 0x282828,
       resolution: window.devicePixelRatio || 1,
     });
 
     const constraints = {
-      video: {width: this.width, height: this.height, facingMode: "user"},
+      video: {width: width, height: height, facingMode: "user"},
       audio: false,
     };
+    console.log(constraints);
     navigator.mediaDevices
       .getUserMedia(constraints)
       .then((stream) => {
@@ -99,11 +101,10 @@ export default class Camera extends Vue {
     this.$refs.ascii.appendChild(this.pixiApp.view);
     this.container = new PIXI.Container();
     const texture = PIXI.Texture.from(this.$refs.liveView);
-    const webcam = new PIXI.Sprite(texture);
-    webcam.width = this.pixiApp.view.width;
-    webcam.height = this.pixiApp.view.height;
-    this.container.addChild(webcam);
-
+    this.webcamSprite = new PIXI.Sprite(texture);
+    this.webcamSprite.width = width;
+    this.webcamSprite.height = height;
+    this.container.addChild(this.webcamSprite);
     this.colorMatrixBW.blackAndWhite(this.bw);
     this.colorMatrixBrightness.brightness(this.brightness, true);
     this.colorMatrixContrast.contrast(this.contrast, false);
@@ -127,10 +128,20 @@ export default class Camera extends Vue {
     //   w = window.innerWidth;
     //   h = window.innerWidth / this.ratio;
     // }
+    const w = window.innerWidth;
+    const h = window.innerHeight - this.$refs.controlMenu.clientHeight;
     if (!this.pixiApp) throw new Error();
-    this.pixiApp.renderer.view.style.width = window.innerWidth + "px";
-    this.pixiApp.renderer.view.style.height =
-      window.innerHeight - this.$refs.controlMenu.clientHeight + "px";
+    this.pixiApp.renderer.resize(w, h);
+    this.pixiApp.renderer.view.style.width = w + "px";
+    this.pixiApp.renderer.view.style.height = h + "px";
+    if (!this.webcamSprite || !this.container) throw new Error();
+    const ratio = this.webcamSprite.width / this.webcamSprite.height;
+    this.webcamSprite.height = h;
+    this.webcamSprite.width = h * ratio;
+    this.webcamSprite.position.x =
+      this.pixiApp.screen.width / 2 - this.webcamSprite.width / 2;
+    this.webcamSprite.position.y =
+      this.pixiApp.screen.height / 2 - this.webcamSprite.height / 2;
   }
 
   bwOn() {

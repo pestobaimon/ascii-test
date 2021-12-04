@@ -29,10 +29,10 @@
 </template>
 
 <script lang="ts">
-import { Options, Vue } from "vue-class-component";
+import {Options, Vue} from "vue-class-component";
 import * as PIXI from "pixi.js";
-import { ColorMatrixFilter } from "@pixi/filter-color-matrix";
-import { AsciiFilter } from "@pixi/filter-ascii";
+import {ColorMatrixFilter} from "@pixi/filter-color-matrix";
+import {AsciiFilter} from "@pixi/filter-ascii";
 
 @Options({
   props: {
@@ -70,17 +70,15 @@ export default class Camera extends Vue {
   asciiFilter = new AsciiFilter(6);
 
   mounted(): void {
-    const width = window.innerWidth;
-    const height = window.innerHeight - this.$refs.controlMenu.clientHeight;
     this.pixiApp = new PIXI.Application({
-      width: width,
-      height: height,
+      width: 480,
+      height: 720,
       backgroundColor: 0x282828,
       resolution: window.devicePixelRatio || 1,
     });
 
     const constraints = {
-      video: { width: width, height: height, facingMode: "user" },
+      video: {width: 480, height: 720, facingMode: "user"},
       audio: false,
     };
     console.log(constraints);
@@ -97,8 +95,8 @@ export default class Camera extends Vue {
     this.container = new PIXI.Container();
     const texture = PIXI.Texture.from(this.$refs.liveView);
     this.webcamSprite = new PIXI.Sprite(texture);
-    this.webcamSprite.width = width;
-    this.webcamSprite.height = height;
+    this.webcamSprite.width = 480;
+    this.webcamSprite.height = 720;
     this.container.addChild(this.webcamSprite);
     this.colorMatrixBW.blackAndWhite(this.bw);
     this.colorMatrixBrightness.brightness(this.brightness, true);
@@ -110,33 +108,6 @@ export default class Camera extends Vue {
       this.colorMatrixBW,
     ];
     this.pixiApp.stage.addChild(this.container);
-    window.onresize = this.resize;
-  }
-
-  resize(): void {
-    // let w;
-    // let h;
-    // if (window.innerWidth / window.innerHeight >= this.ratio) {
-    //   w = window.innerHeight * this.ratio;
-    //   h = window.innerHeight;
-    // } else {
-    //   w = window.innerWidth;
-    //   h = window.innerWidth / this.ratio;
-    // }
-    const w = window.innerWidth;
-    const h = window.innerHeight - this.$refs.controlMenu.clientHeight;
-    if (!this.pixiApp) throw new Error();
-    this.pixiApp.renderer.resize(w, h);
-    this.pixiApp.renderer.view.style.width = w + "px";
-    this.pixiApp.renderer.view.style.height = h + "px";
-    if (!this.webcamSprite || !this.container) throw new Error();
-    const ratio = this.webcamSprite.width / this.webcamSprite.height;
-    this.webcamSprite.height = h;
-    this.webcamSprite.width = h * ratio;
-    this.webcamSprite.position.x =
-      this.pixiApp.screen.width / 2 - this.webcamSprite.width / 2;
-    this.webcamSprite.position.y =
-      this.pixiApp.screen.height / 2 - this.webcamSprite.height / 2;
   }
 
   bwOn(): void {
@@ -197,12 +168,11 @@ export default class Camera extends Vue {
 <style>
 body {
   margin: 0;
-  overflow: hidden; /* Hide scrollbars */
 }
 .camera-canvas {
   background: black;
   color: white;
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;

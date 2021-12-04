@@ -29,10 +29,10 @@
 </template>
 
 <script lang="ts">
-import {Options, Vue} from "vue-class-component";
+import { Options, Vue } from "vue-class-component";
 import * as PIXI from "pixi.js";
-import {ColorMatrixFilter} from "@pixi/filter-color-matrix";
-import {AsciiFilter} from "@pixi/filter-ascii";
+import { ColorMatrixFilter } from "@pixi/filter-color-matrix";
+import { AsciiFilter } from "@pixi/filter-ascii";
 
 @Options({
   props: {
@@ -51,11 +51,15 @@ export default class Camera extends Vue {
   scaleFactor = 1.0;
   stream: MediaStream | null = null;
 
-  width: number | null = null;
-  height: number | null = null;
-  ratio = 16 / 9;
+  width = 480;
+  height = 720;
 
-  pixiApp: PIXI.Application | null = null;
+  pixiApp = new PIXI.Application({
+    width: this.width,
+    height: this.height,
+    backgroundColor: 0x282828,
+    resolution: 1,
+  });
   webcamSprite: PIXI.Sprite | null = null;
 
   bw = true;
@@ -70,15 +74,8 @@ export default class Camera extends Vue {
   asciiFilter = new AsciiFilter(6);
 
   mounted(): void {
-    this.pixiApp = new PIXI.Application({
-      width: 480,
-      height: 720,
-      backgroundColor: 0x282828,
-      resolution: window.devicePixelRatio || 1,
-    });
-
     const constraints = {
-      video: {width: 480, height: 720, facingMode: "user"},
+      video: { width: this.width, height: this.height, facingMode: "user" },
       audio: false,
     };
     console.log(constraints);
@@ -95,8 +92,8 @@ export default class Camera extends Vue {
     this.container = new PIXI.Container();
     const texture = PIXI.Texture.from(this.$refs.liveView);
     this.webcamSprite = new PIXI.Sprite(texture);
-    this.webcamSprite.width = 480;
-    this.webcamSprite.height = 720;
+    this.webcamSprite.width = this.width;
+    this.webcamSprite.height = this.height;
     this.container.addChild(this.webcamSprite);
     this.colorMatrixBW.blackAndWhite(this.bw);
     this.colorMatrixBrightness.brightness(this.brightness, true);

@@ -23,10 +23,17 @@
       ></canvas>
       <!-- <pre ref="preText" class="ascii">{{ asciiString }}</pre> -->
       <div class="slider">
-        <h4>brightness</h4>
-        <vue-slider :min="-100" :max="100" v-model="brightness" />
-        <h4>contrast</h4>
-        <vue-slider :interval="0.01" :min="0" :max="2" v-model="contrast" />
+        <div>
+          <h4>brightness</h4>
+          <vue-slider :min="-100" :max="100" v-model="brightness" />
+        </div>
+        <div>
+          <h4>contrast</h4>
+          <vue-slider :interval="0.01" :min="0" :max="2" v-model="contrast" />
+        </div>
+        <div>
+          <h4>FPS: {{ fps }}</h4>
+        </div>
       </div>
     </div>
   </div>
@@ -61,6 +68,7 @@ export default class NewAscii extends Vue {
   asciiString = "";
   brightness = 0;
   contrast = 1;
+  fps = "";
 
   mounted() {
     this.startCameraStream();
@@ -105,21 +113,23 @@ export default class NewAscii extends Vue {
         let dst = new cv.Mat(this.videoHeight, this.videoWidth, cv.CV_8UC1);
         let cap = new cv.VideoCapture(camera);
 
+        const context = this.$refs.asciiCanvas.getContext("2d");
+        const maxWidth = 999999;
+        const lineHeight = 6.7;
+
         const FPS = 30;
-        let stop = 0;
+        const FRAME_MIN_TIME = 1000 / 1000;
+
+        let lastFrameTime = 0;
         const processVideo = () => {
+          const delta = Date.now() - lastFrameTime;
+          this.fps = (1000 / delta).toPrecision(4);
           this.$refs.asciiCanvas.width = 480;
           this.$refs.asciiCanvas.height = 720;
-          const context = this.$refs.asciiCanvas.getContext("2d");
-          const maxWidth = 999999;
-          const lineHeight = 6.7;
-
           if (!context) throw new Error();
           context.font = "9.2pt Share Tech Mono";
           context.fillStyle = "#000";
           try {
-            // console.time("array manipulation");
-            let begin = Date.now();
             // start processing.
             cap.read(src);
             cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY);
@@ -154,12 +164,9 @@ export default class NewAscii extends Vue {
             wrapText(context, newAsciiString, 0, 0, maxWidth, lineHeight);
             this.asciiString = newAsciiString;
             cv.imshow(canvas, dst);
-            // html2canvas(this.$refs.preText).then((canvas) => {
-            //   this.$refs.asciiCanvas.getContext("2d")!.drawImage(canvas, 0, 0);
-            // });
             // schedule the next one.
-            let delay = 1000 / FPS - (Date.now() - begin);
-            setTimeout(processVideo, delay);
+            lastFrameTime = Date.now();
+            requestAnimationFrame(processVideo);
           } catch (err) {
             console.error(err);
           }
@@ -167,7 +174,7 @@ export default class NewAscii extends Vue {
         };
 
         // schedule the first one.
-        setTimeout(processVideo, 0);
+        requestAnimationFrame(processVideo);
       })
       .catch(function (err) {
         console.log("An error occurred! " + err);

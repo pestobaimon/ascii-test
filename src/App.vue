@@ -94,6 +94,8 @@ export default class Camera extends Vue {
     this.webcamSprite = new PIXI.Sprite(texture);
     this.webcamSprite.width = this.width;
     this.webcamSprite.height = this.height;
+    this.webcamSprite.anchor.x = 1;
+    this.webcamSprite.scale.x *= -1;
     this.container.addChild(this.webcamSprite);
     this.colorMatrixBW.blackAndWhite(this.bw);
     this.colorMatrixBrightness.brightness(this.brightness, true);

@@ -1,5 +1,5 @@
 <template>
-  <div class="camera-box">
+  <div class="container">
     <span style="font-family: 'Share Tech Mono', monospace">&nbsp;</span>
     <div>
       <video
@@ -22,6 +22,12 @@
         ref="asciiCanvas"
       ></canvas>
       <!-- <pre ref="preText" class="ascii">{{ asciiString }}</pre> -->
+      <div class="slider">
+        <h4>brightness</h4>
+        <vue-slider :min="-100" :max="100" v-model="brightness" />
+        <h4>contrast</h4>
+        <vue-slider :interval="0.01" :min="0" :max="2" v-model="contrast" />
+      </div>
     </div>
   </div>
 </template>
@@ -53,6 +59,8 @@ export default class NewAscii extends Vue {
   videoHeight = 720;
   videoWidth = 480;
   asciiString = "";
+  brightness = 0;
+  contrast = 1;
 
   mounted() {
     this.startCameraStream();
@@ -123,7 +131,7 @@ export default class NewAscii extends Vue {
             );
             // cv.pyrDown(dst, dst);
             // cv.addWeighted(dst, 1, dst, 1.2, 0, dst);
-            cv.convertScaleAbs(dst, dst, 1.3, 0);
+            cv.convertScaleAbs(dst, dst, this.contrast, this.brightness);
             let newAsciiString = "";
             for (let i = 0; i < dst.rows; i++) {
               for (let j = 0; j < dst.cols; j++) {
@@ -218,6 +226,10 @@ function wrapText(
 
 <style scoped>
 @import url("https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap");
+.container {
+  display: flex;
+  justify-content: center;
+}
 .camera {
   -webkit-transform: scaleX(-1);
   transform: scaleX(-1);
@@ -243,5 +255,8 @@ function wrapText(
 .source-canvas {
   -webkit-transform: scaleX(-1);
   transform: scaleX(-1);
+}
+.slider {
+  width: 300px;
 }
 </style>

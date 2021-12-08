@@ -233,7 +233,7 @@ function wrapText(
   //manage carriage return
   text = text.replace(/(\r\n|\n\r|\r|\n)/g, "\n");
   //manage tabulation
-  text = text.replace(/(\t)/g, "    "); // I use 4 spaces for tabulation, but you can use anything you want
+  text = text.replace(/(\t)/g, "    "); // replace tabulation with 4 spaces
   //array of lines
   var sections = text.split("\n");
 

@@ -272,8 +272,6 @@ function wrapText(
   margin: 0;
 }
 .source-canvas {
-  -webkit-transform: scaleX(-1);
-  transform: scaleX(-1);
 }
 .slider {
   width: 300px;

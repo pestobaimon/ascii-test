@@ -32,6 +32,15 @@
           <vue-slider :interval="0.01" :min="0" :max="2" v-model="contrast" />
         </div>
         <div>
+          <h4>resolution</h4>
+          <vue-slider
+            :interval="0.01"
+            :min="0.05"
+            :max="0.5"
+            v-model="scalingRatio"
+          />
+        </div>
+        <div>
           <h4>FPS: {{ fps }}</h4>
         </div>
       </div>
@@ -69,6 +78,7 @@ export default class NewAscii extends Vue {
   brightness = 0;
   contrast = 1;
   fps = "";
+  scalingRatio = 0.15;
 
   mounted() {
     this.startCameraStream();
@@ -116,7 +126,6 @@ export default class NewAscii extends Vue {
 
         const context = this.$refs.asciiCanvas.getContext("2d");
         const maxWidth = 999999;
-        const lineHeight = 6.7;
 
         const FPS = 10000;
         const FRAME_MIN_TIME = 1000 / FPS;
@@ -126,6 +135,7 @@ export default class NewAscii extends Vue {
         let lastFrameTime = 0;
         const processVideo = () => {
           const delta = Date.now() - lastFrameTime;
+          lastFrameTime = Date.now();
           if (delta < FRAME_MIN_TIME) {
             //skip the frame if the call is too early
             requestAnimationFrame(processVideo);
@@ -137,9 +147,6 @@ export default class NewAscii extends Vue {
           this.fps = (1000 / (deltaSum / frameAvg.length)).toPrecision(4);
           this.$refs.asciiCanvas.width = 480;
           this.$refs.asciiCanvas.height = 720;
-          if (!context) throw new Error();
-          context.font = "9.2pt Share Tech Mono";
-          context.fillStyle = "#000";
           try {
             // console.time("array manipulation");
             let begin = Date.now();
@@ -149,14 +156,25 @@ export default class NewAscii extends Vue {
             cv.resize(
               dst,
               dst,
-              new cv.Size(dst.cols * 0.15, dst.rows * 0.15),
+              new cv.Size(
+                dst.cols * this.scalingRatio,
+                dst.rows * this.scalingRatio
+              ),
               cv.INTER_AREA
             );
             // cv.pyrDown(dst, dst);
             // cv.addWeighted(dst, 1, dst, 1.2, 0, dst);
             cv.convertScaleAbs(dst, dst, this.contrast, this.brightness);
             cv.flip(dst, dst, 1);
+            if (!context) throw new Error();
+            const LineheightfontSizeRatio = 0.7246;
+            const magicNumber = 1000;
+            const fontSize = magicNumber / dst.rows;
+            const lineHeight = fontSize * LineheightfontSizeRatio;
+            context.font = `${fontSize}pt Share Tech Mono`;
+            context.fillStyle = "#000";
             let newAsciiString = "";
+
             for (let i = 0; i < dst.rows; i++) {
               for (let j = 0; j < dst.cols; j++) {
                 // this.asciiArray[i][j] =
@@ -178,8 +196,6 @@ export default class NewAscii extends Vue {
             wrapText(context, newAsciiString, 0, 0, maxWidth, lineHeight);
             this.asciiString = newAsciiString;
             cv.imshow(canvas, dst);
-            // schedule the next one.
-            lastFrameTime = Date.now();
             requestAnimationFrame(processVideo);
           } catch (err) {
             console.error(err);

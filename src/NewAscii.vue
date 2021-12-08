@@ -98,6 +98,7 @@ export default class NewAscii extends Vue {
         width: this.videoWidth,
         height: this.videoHeight,
         facingMode: "user",
+        frameRate: {ideal: 60},
       },
       audio: false,
     };
@@ -117,19 +118,31 @@ export default class NewAscii extends Vue {
         const maxWidth = 999999;
         const lineHeight = 6.7;
 
-        const FPS = 30;
-        const FRAME_MIN_TIME = 1000 / 1000;
+        const FPS = 10000;
+        const FRAME_MIN_TIME = 1000 / FPS;
+
+        const frameAvg = [0, 0, 0, 0, 0, 0, 0];
 
         let lastFrameTime = 0;
         const processVideo = () => {
           const delta = Date.now() - lastFrameTime;
-          this.fps = (1000 / delta).toPrecision(4);
+          if (delta < FRAME_MIN_TIME) {
+            //skip the frame if the call is too early
+            requestAnimationFrame(processVideo);
+            return; // return as there is nothing to do
+          }
+          frameAvg.push(delta);
+          frameAvg.shift();
+          const deltaSum = frameAvg.reduce((a, b) => a + b, 0);
+          this.fps = (1000 / (deltaSum / frameAvg.length)).toPrecision(4);
           this.$refs.asciiCanvas.width = 480;
           this.$refs.asciiCanvas.height = 720;
           if (!context) throw new Error();
           context.font = "9.2pt Share Tech Mono";
           context.fillStyle = "#000";
           try {
+            // console.time("array manipulation");
+            let begin = Date.now();
             // start processing.
             cap.read(src);
             cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY);
@@ -142,6 +155,7 @@ export default class NewAscii extends Vue {
             // cv.pyrDown(dst, dst);
             // cv.addWeighted(dst, 1, dst, 1.2, 0, dst);
             cv.convertScaleAbs(dst, dst, this.contrast, this.brightness);
+            cv.flip(dst, dst, 1);
             let newAsciiString = "";
             for (let i = 0; i < dst.rows; i++) {
               for (let j = 0; j < dst.cols; j++) {
@@ -250,8 +264,6 @@ function wrapText(
   transform: scaleX(-1);
 }
 .ascii-canvas {
-  -webkit-transform: scaleX(-1);
-  transform: scaleX(-1);
 }
 .row-list {
   display: grid;

@@ -24,15 +24,15 @@
       <!-- <pre ref="preText" class="ascii">{{ asciiString }}</pre> -->
       <div class="slider">
         <div>
-          <h4>brightness</h4>
+          <h4>brightness: {{ brightness }}</h4>
           <vue-slider :min="-100" :max="100" v-model="brightness" />
         </div>
         <div>
-          <h4>contrast</h4>
+          <h4>contrast: {{ contrast }}</h4>
           <vue-slider :interval="0.01" :min="0" :max="2" v-model="contrast" />
         </div>
         <div>
-          <h4>scaling ratio</h4>
+          <h4>scaling ratio: {{ scalingRatio }}</h4>
           <vue-slider
             :interval="0.01"
             :min="0.05"

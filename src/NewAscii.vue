@@ -41,6 +41,10 @@
           />
         </div>
         <div>
+          <h4>ascii text</h4>
+          <input type="text" v-model="asciiBase" />
+        </div>
+        <div>
           <h4>FPS: {{ fps }}</h4>
         </div>
       </div>
@@ -79,6 +83,7 @@ export default class NewAscii extends Vue {
   brightness = 0;
   contrast = 1;
   fps = "";
+  asciiBase = "MEfptecoi;:,.   ";
   scalingRatio = 0.15;
   wasmExports: any = null;
 
@@ -100,15 +105,6 @@ export default class NewAscii extends Vue {
   }
 
   async startCameraStream(): Promise<void> {
-    // create ascii mapping
-    const letters = "MEfptecoi;:,.   ";
-    // const letters = "APLertnoj:,.   ";
-    let asciiMap = "";
-    for (let i = 0; i < 256; i++) {
-      const currentIndex = Math.round((i / 255) * (letters.length - 1));
-      asciiMap += letters[currentIndex];
-    }
-    console.log(asciiMap);
     const constraints = {
       video: {
         width: this.videoWidth,
@@ -179,45 +175,55 @@ export default class NewAscii extends Vue {
             const lineHeight = fontSize * LineheightfontSizeRatio;
             context.font = `${fontSize}pt Share Tech Mono`;
             context.fillStyle = "#000";
+
+            // create ascii mapping
+            let asciiMap = "";
+            for (let i = 0; i < 256; i++) {
+              const currentIndex = Math.round(
+                (i / 255) * (this.asciiBase.length - 1)
+              );
+              asciiMap += this.asciiBase[currentIndex];
+            }
+
             let newAsciiString = "";
 
-            // for (let i = 0; i < dst.rows; i++) {
-            //   for (let j = 0; j < dst.cols; j++) {
-            //     newAsciiString +=
-            //       asciiMap[clamp(dst.ucharPtr(i, j)[0], 0, 255)];
-            //   }
-            //   newAsciiString += "\n";
-            // }
-            const {
-              computeAsciiString,
-              add,
-              Int32Array_ID,
-              __newString,
-              __getString,
-              __newArray,
-            } = this.wasmExports;
-            const doComputeAsciiString = (
-              cols: number,
-              pixelArray: number[],
-              brightness: number,
-              contrast: number
-            ) => {
-              const pixelArrayPtr = __newArray(Int32Array_ID, pixelArray);
-              const asciiStrPtr = computeAsciiString(
-                cols,
-                pixelArrayPtr,
-                brightness,
-                contrast
-              );
-              const asciiStr = __getString(asciiStrPtr);
-              return asciiStr;
-            };
-            newAsciiString = doComputeAsciiString(
-              dst.cols,
-              dst.data,
-              this.brightness,
-              this.contrast
-            );
+            for (let i = 0; i < dst.rows; i++) {
+              for (let j = 0; j < dst.cols; j++) {
+                newAsciiString +=
+                  asciiMap[clamp(dst.ucharPtr(i, j)[0], 0, 255)];
+              }
+              newAsciiString += "\n";
+            }
+            // const {
+            //   computeAsciiString,
+            //   add,
+            //   Int32Array_ID,
+            //   __newString,
+            //   __getString,
+            //   __newArray,
+            // } = this.wasmExports;
+            // const doComputeAsciiString = (
+            //   cols: number,
+            //   pixelArray: number[],
+            //   brightness: number,
+            //   contrast: number
+            // ) => {
+            //   const pixelArrayPtr = __newArray(Int32Array_ID, pixelArray);
+            //   const asciiStrPtr = computeAsciiString(
+            //     cols,
+            //     pixelArrayPtr,
+            //     brightness,
+            //     contrast
+            //   );
+            //   const asciiStr = __getString(asciiStrPtr);
+            //   return asciiStr;
+            // };
+            // newAsciiString = doComputeAsciiString(
+            //   dst.cols,
+            //   dst.data,
+            //   this.brightness,
+            //   this.contrast
+            // );
             wrapText(context, newAsciiString, 0, 0, maxWidth, lineHeight);
             cv.imshow(canvas, dst);
             requestAnimationFrame(processVideo);

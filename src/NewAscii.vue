@@ -32,7 +32,7 @@
           <vue-slider :interval="0.01" :min="0" :max="2" v-model="contrast" />
         </div>
         <div>
-          <h4>resolution</h4>
+          <h4>scaling ratio</h4>
           <vue-slider
             :interval="0.01"
             :min="0.05"
@@ -56,6 +56,7 @@ declare global {
 }
 import {Options, Vue} from "vue-class-component";
 import cv from "@techstark/opencv-js";
+import loader from "@assemblyscript/loader";
 
 @Options({
   props: {
@@ -79,8 +80,12 @@ export default class NewAscii extends Vue {
   contrast = 1;
   fps = "";
   scalingRatio = 0.15;
+  wasmExports: any = null;
 
-  mounted() {
+  async mounted() {
+    this.wasmExports = (
+      await loader.instantiate(fetch("optimized.wasm"))
+    ).exports;
     this.startCameraStream();
   }
 
@@ -94,7 +99,7 @@ export default class NewAscii extends Vue {
     }
   }
 
-  startCameraStream(): void {
+  async startCameraStream(): Promise<void> {
     // create ascii mapping
     const letters = "MEfptecoi;:,.   ";
     // const letters = "APLertnoj:,.   ";
@@ -103,6 +108,7 @@ export default class NewAscii extends Vue {
       const currentIndex = Math.round((i / 255) * (letters.length - 1));
       asciiMap += letters[currentIndex];
     }
+    console.log(asciiMap);
     const constraints = {
       video: {
         width: this.videoWidth,
@@ -127,8 +133,8 @@ export default class NewAscii extends Vue {
         const context = this.$refs.asciiCanvas.getContext("2d");
         const maxWidth = 999999;
 
-        const FPS = 10000;
-        const FRAME_MIN_TIME = 1000 / FPS;
+        const FPS = 1;
+        const FRAME_MIN_TIME = 1000 / 1000;
 
         const frameAvg = [0, 0, 0, 0, 0, 0, 0];
 
@@ -175,26 +181,44 @@ export default class NewAscii extends Vue {
             context.fillStyle = "#000";
             let newAsciiString = "";
 
-            for (let i = 0; i < dst.rows; i++) {
-              for (let j = 0; j < dst.cols; j++) {
-                // this.asciiArray[i][j] =
-                //   asciiMap[clamp(dst.ucharPtr(i, j) - 20, 0, 255)];
-                // dst.ucharPtr(i, j)[0] = clamp(dst.ucharPtr(i, j) - 20, 0, 255);
-                // if (stop < 5000) {
-                //   const rgba = dst.ucharPtr(i, j);
-                //   console.log(
-                //     `r= ${rgba[0]}, g= ${rgba[1]}, b=${rgba[2]}, a=${rgba[3]}`
-                //   );
-                //   console.log(rgba);
-                //   stop++;
-                // }
-                newAsciiString +=
-                  asciiMap[clamp(dst.ucharPtr(i, j)[0], 0, 255)];
-              }
-              newAsciiString += "\n";
-            }
+            // for (let i = 0; i < dst.rows; i++) {
+            //   for (let j = 0; j < dst.cols; j++) {
+            //     newAsciiString +=
+            //       asciiMap[clamp(dst.ucharPtr(i, j)[0], 0, 255)];
+            //   }
+            //   newAsciiString += "\n";
+            // }
+            const {
+              computeAsciiString,
+              add,
+              Int32Array_ID,
+              __newString,
+              __getString,
+              __newArray,
+            } = this.wasmExports;
+            const doComputeAsciiString = (
+              cols: number,
+              pixelArray: number[],
+              brightness: number,
+              contrast: number
+            ) => {
+              const pixelArrayPtr = __newArray(Int32Array_ID, pixelArray);
+              const asciiStrPtr = computeAsciiString(
+                cols,
+                pixelArrayPtr,
+                brightness,
+                contrast
+              );
+              const asciiStr = __getString(asciiStrPtr);
+              return asciiStr;
+            };
+            newAsciiString = doComputeAsciiString(
+              dst.cols,
+              dst.data,
+              this.brightness,
+              this.contrast
+            );
             wrapText(context, newAsciiString, 0, 0, maxWidth, lineHeight);
-            this.asciiString = newAsciiString;
             cv.imshow(canvas, dst);
             requestAnimationFrame(processVideo);
           } catch (err) {
@@ -259,6 +283,11 @@ function wrapText(
     y += lineHeight;
   }
 }
+
+const extractModule = async (module: any) => {
+  const {instance} = await module();
+  return instance.exports;
+};
 </script>
 
 <style scoped>
